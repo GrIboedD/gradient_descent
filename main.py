@@ -1,41 +1,44 @@
-def parabola(x):
-    return (x + 10) ** 2
+import numpy as np
 
 
-def my_function(x, y):
-    return x ** 2 + y ** 2
-
-
-def simple_gradient_descent(function, parameters, step, eps1, eps2):
+def simple_gradient(function, parameters, argument_increment = 1e-06):
     """
-    Градиентный спуск для поиска локального минимума функции
+    Алгоритм для вычисления градиента с помощью определения производной
     :param function: исходная функция
-    :param parameters: начальные значения параметров
-    :param step: скорость спуска
-    :param eps1: максимальное значение частной производной для остановки алгоритма
-    :param eps2: значения приращения аргумента для вычисления частных производных
-    :return: значение параметров при локальном минимуме
+    :param parameters: параметры функции
+    :param argument_increment: значение приращения аргумента (не обязательно)
+    :return:
     """
-    while True:
-        gradient = []
-        for i in range(len(parameters)):
-            tmp_parameters = parameters.copy()
-            tmp_parameters[i] += eps2
-            gradient.append((function(*tmp_parameters) - function(*parameters)) / eps2)
+    gradient = np.array([])
+    for i in range(len(parameters)):
+        incremental_parameters = parameters.copy()
+        incremental_parameters[i] += argument_increment
+        gradient = np.append(gradient, (function(*incremental_parameters) - function(*parameters)) / argument_increment)
+    return gradient
 
-        is_end = True
-        for i in range(len(gradient)):
-            if abs(gradient[i]) > eps1:
-                is_end = False
 
-        if is_end:
+
+def gradient_descent(function, gradient, initial_parameters, learn_rate, n_iter, tolerance = 1e-06):
+    """
+    Алгоритм градиентного спуска для поиска локального минимума функции
+    :param function: функция, минимум которой необходимо найти
+    :param gradient: функция расчета градиента
+    :param initial_parameters: начальные значения параметров
+    :param learn_rate: скорость спуска
+    :param n_iter: количество итераций
+    :param tolerance: значение для остановки алгоритма, когда изменение по каждому параметру <= значению (не обязательно)
+    :return: значение параметров в предполагаемом минимуме функции
+    """
+    parameters = initial_parameters.copy()
+    for _ in range(n_iter):
+        difference = learn_rate * gradient(function, parameters)
+        if np.all(np.abs(difference) <= tolerance):
             break
 
-        for i in range(len(parameters)):
-            parameters[i] -= gradient[i] * step
+        parameters -= difference
 
     return parameters
 
 
 if __name__ == '__main__':
-    print(simple_gradient_descent(parabola, [-5], 0.1, 0.001, 0.0001))
+    print(gradient_descent(lambda x: x ** 2, simple_gradient, [5], 0.5, 100))
