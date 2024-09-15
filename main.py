@@ -1,37 +1,68 @@
 import numpy as np
 
 
-def simple_gradient(function, parameters, argument_increment = 1e-06):
+def loss_function_simple_linear_regression(a, b, x_arr, y_arr):
+    """
+    Функция ошибки для простой линейной регрессии
+    :param a: параметр a
+    :param b: параметр b
+    :param x_arr: массив входных данных
+    :param y_arr: массив выходных данных
+    :return: сумму квадратов разности расчетных и наблюдаемых значений, деленную на 2N
+    """
+    x_arr = np.array(x_arr)
+    y_arr = np.array(y_arr)
+    ssr = (y_arr - a - b * x_arr) ** 2
+    return np.sum(ssr) / (2 *len(y_arr))
+
+
+def simple_gradient(function, parameters, input_data=None, output_data=None, argument_increment=1e-06):
     """
     Алгоритм для вычисления градиента с помощью определения производной
     :param function: исходная функция
     :param parameters: параметры функции
+    :param input_data: матрица входных данных
+    :param output_data: матрица выходных данных
     :param argument_increment: значение приращения аргумента (не обязательно)
     :return:
     """
-    gradient = np.array([])
+    gradient = []
     for i in range(len(parameters)):
         incremental_parameters = parameters.copy()
         incremental_parameters[i] += argument_increment
-        gradient = np.append(gradient, (function(*incremental_parameters) - function(*parameters)) / argument_increment)
+
+        if input_data is None and output_data is None:
+            gradient.append((function(*incremental_parameters) - function(*parameters)) / argument_increment)
+        else:
+            gradient.append((function(*incremental_parameters, input_data, output_data) - function(
+                *parameters, input_data, output_data)) / argument_increment)
     return gradient
 
 
-
-def gradient_descent(function, gradient, initial_parameters, learn_rate, n_iter, tolerance = 1e-06):
+def gradient_descent(loss_function, gradient, initial_parameters, learn_rate, n_iter, input_data=None, output_data=None,
+                     tolerance=1e-06):
     """
     Алгоритм градиентного спуска для поиска локального минимума функции
-    :param function: функция, минимум которой необходимо найти
+    :param loss_function: функция ошибки, минимум которой необходимо найти
     :param gradient: функция расчета градиента
     :param initial_parameters: начальные значения параметров
     :param learn_rate: скорость спуска
     :param n_iter: количество итераций
+    :param input_data: матрица входных данных
+    :param output_data: матрица выходных данных
     :param tolerance: значение для остановки алгоритма, когда изменение по каждому параметру <= значению (не обязательно)
     :return: значение параметров в предполагаемом минимуме функции
     """
     parameters = initial_parameters.copy()
     for _ in range(n_iter):
-        difference = learn_rate * gradient(function, parameters)
+
+        if input_data is None and output_data is None:
+            vector = np.array(gradient(loss_function, parameters))
+        else:
+            vector = np.array(gradient(loss_function, parameters, input_data, output_data))
+
+        difference = learn_rate * vector
+
         if np.all(np.abs(difference) <= tolerance):
             break
 
@@ -41,4 +72,9 @@ def gradient_descent(function, gradient, initial_parameters, learn_rate, n_iter,
 
 
 if __name__ == '__main__':
-    print(gradient_descent(lambda x: x ** 2, simple_gradient, [5], 0.5, 100))
+    print(gradient_descent(lambda u, v: u ** 2 + v ** 2, simple_gradient, [5, 5], 0.5, 100))
+
+    x = [5, 15, 25, 35, 45, 55]
+    y = [5, 20, 14, 32, 22, 38]
+
+    print(gradient_descent(loss_function_simple_linear_regression, simple_gradient, [0.5, 0.5], 0.0008, 100_000, x, y))
