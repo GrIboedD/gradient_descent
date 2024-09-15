@@ -71,7 +71,7 @@ def gradient_descent(loss_function, gradient, initial_parameters, learn_rate, n_
     return parameters
 
 
-def stochastic_gradient_descent(loss_function, gradient, initial_parameters, learn_rate, n_iter, input_data,
+def stochastic_gradient_descent(loss_function, gradient, initial_parameters, learn_rate, decay_rate, n_iter, input_data,
                                 output_data, batch_size=1,
                                 tolerance=1e-06):
     """
@@ -80,6 +80,7 @@ def stochastic_gradient_descent(loss_function, gradient, initial_parameters, lea
     :param gradient: функция расчета градиента
     :param initial_parameters: начальные значения параметров
     :param learn_rate: скорость спуска
+    :param decay_rate: инерция спуска
     :param n_iter: количество итераций
     :param input_data: матрица входных данных
     :param output_data: матрица выходных данных
@@ -89,23 +90,18 @@ def stochastic_gradient_descent(loss_function, gradient, initial_parameters, lea
     """
     parameters = initial_parameters.copy()
     batch_number = len(input_data) // batch_size
+    difference = 0
     for _ in range(n_iter):
         indexes = np.random.permutation(len(input_data))
         shuffled_input = np.array(input_data)[indexes]
         shuffled_output = np.array(output_data)[indexes]
-
+        start = 0
         for _ in range(batch_number):
-            batch_input = []
-            batch_output = []
-
-            for i in range(batch_size):
-                batch_input.append(shuffled_input[0])
-                batch_output.append(shuffled_output[0])
-                shuffled_input = np.delete(shuffled_input, 0, 0)
-                shuffled_output = np.delete(shuffled_output, 0, 0)
-
+            batch_input = shuffled_input[start: start + batch_size]
+            batch_output = shuffled_output[start: start + batch_size]
+            start = start + batch_size
             vector = np.array(gradient(loss_function, parameters, batch_input, batch_output))
-            difference = learn_rate * vector
+            difference = learn_rate * vector - difference * decay_rate
             if np.all(np.abs(difference) <= tolerance):
                 break
             parameters -= difference
@@ -121,4 +117,5 @@ if __name__ == '__main__':
 
     print(gradient_descent(loss_function_simple_linear_regression, simple_gradient, [0.5, 0.5], 0.0008, 100_000, x, y))
 
-    print(stochastic_gradient_descent(loss_function_simple_linear_regression, simple_gradient, [0.5, 0.5], 0.0008, 100_000, x, y, 3))
+    print(stochastic_gradient_descent(loss_function_simple_linear_regression, simple_gradient, [0.5, 0.5], 0.0001, 0.3,
+                                      100_000, x, y, 3))
